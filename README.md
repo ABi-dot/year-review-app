@@ -1,21 +1,30 @@
-# Next.js template
+# 个人年度总结 Web 应用
 
-This is a Next.js template with shadcn/ui.
+## 一句话描述
+一个可以自动记录书/影/剧/游/地的个人年度消费轨迹工具，年底一键生成精美总结长图 + AI 文案。
 
-## Adding components
+## 为什么做这个项目
+- 市面上没有完全匹配的产品（豆瓣是社区、Notion 模板太手动）
+- 核心痛点：**记录太麻烦** + **总结太丑/没有** + **文案不会写**
+- 闭环价值：自动化录入 → 精美可视化 → AI 文案 → 社交分享
 
-To add components to your app, run the following command:
+## 文档索引
+
+| 文档 | 内容 | 状态 |
+|------|------|------|
+| [01-产品定位与核心价值](docs/01-产品定位与核心价值.md) | 目标用户、核心功能、差异化 | 草案 |
+| [02-技术路线](docs/02-技术路线.md) | 核心栈、部署方案、选型理由 | 草案 |
+| [03-外部平台对接策略](docs/03-外部平台对接策略.md) | 豆瓣、Steam、IGDB、地图等对接方案 | 草案 |
+| [04-MVP里程碑](docs/04-MVP里程碑.md) | 分阶段实现计划，最小可行路径 | 草案 |
+| [05-产品创意与创新点](docs/05-产品创意与创新点.md) | 差异化功能、AI 增强、社交玩法 | 草案 |
+| [06-数据库设计草案](docs/06-数据库设计草案.md) | Prisma Schema、核心表结构 | 草案 |
+| [07-待解决问题与风险](docs/07-待解决问题与风险.md) | 未决事项、风险、后续思考 | 草案 |
+
+## 快速启动（未来补充）
 
 ```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+# 待补充具体命令
+cd year-review-app
+# pnpm install / npm install
+# pnpm dev
 ```

@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id            String    @id @default(cuid())
+  type          String
+  title         String
+  originalTitle String?
+  creator       String?
+  coverUrl      String?
+  externalId    String?
+  externalUrl   String?
+  rating        Int?
+  review        String?
+  finishedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tags        Tag[]
+  bookDetail  BookDetail?
+  movieDetail MovieDetail?
+  gameDetail  GameDetail?
+  placeDetail PlaceDetail?
+
+  @@index([type, finishedAt])
+  @@index([externalId, type])
+}
+
+model Tag {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  color String?
+  items Item[]
+
+  @@index([name])
+}
+
+model BookDetail {
+  id        String @id @default(cuid())
+  itemId    String @unique
+  item      Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  isbn      String?
+  publisher String?
+  pageCount Int?
+}
+
+model MovieDetail {
+  id       String @id @default(cuid())
+  itemId   String @unique
+  item     Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  director String?
+  year     Int?
+  duration Int?
+}
+
+model GameDetail {
+  id           String @id @default(cuid())
+  itemId       String @unique
+  item         Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  platform     String?
+  playtime     Int?
+  achievements Int?
+}
+
+model PlaceDetail {
+  id      String @id @default(cuid())
+  itemId  String @unique
+  item    Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  address String?
+  lat     Float?
+  lng     Float?
+  city    String?
+}
+
+model YearSummary {
+  id        String   @id @default(cuid())
+  year      Int
+  template  String
+  imageUrl  String?
+  content   String?
+  createdAt DateTime @default(now())
+}
+
