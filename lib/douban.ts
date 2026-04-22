@@ -196,14 +196,16 @@ const SCRAPE_CATEGORIES: ScrapeCategory[] = [
   { base: "https://www.douban.com", type: "game", path: "games?action=collect", status: "玩过", itemType: "GAME" },
 ];
 
-async function fetchPage(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "text/html",
-    },
-  });
+async function fetchPage(url: string, referer?: string): Promise<string> {
+  const headers: Record<string, string> = {
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    Accept: "text/html",
+  };
+  if (referer) {
+    headers.Referer = referer;
+  }
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.text();
 }
@@ -311,6 +313,71 @@ function parseGridPage(
   return items;
 }
 
+function parseBookPage(
+  html: string
+): (Omit<ParsedDoubanItem, "type" | "status"> & { intro?: string })[] {
+  const items: (Omit<ParsedDoubanItem, "type" | "status"> & {
+    intro?: string;
+  })[] = [];
+  const blocks = html.split(/<li class="subject-item">/);
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    // 封面图
+    const coverMatch = block.match(
+      /<div class="pic">[\s\S]*?<img[^>]+src="([^"]+)"/
+    );
+    const coverUrl = coverMatch ? coverMatch[1] : null;
+
+    // 标题和链接
+    const titleMatch = block.match(
+      /<h2[^>]*>[\s\S]*?<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/
+    );
+    if (!titleMatch) continue;
+    const link = titleMatch[1];
+    const titleHtml = titleMatch[2];
+    const title = titleHtml.replace(/<[^>]+>/g, "").trim();
+
+    // 日期和评分
+    const dateMatch = block.match(/<span class="date">([\s\S]*?)<\/span>/);
+    let date = "";
+    let rating = 0;
+    if (dateMatch) {
+      const dm = dateMatch[1].match(/(\d{4}-\d{2}-\d{2})/);
+      if (dm) date = dm[1];
+      const rm = block.match(/rating(\d+)-t/);
+      if (rm) rating = parseInt(rm[1]);
+    }
+
+    // 评论
+    const commentMatch = block.match(
+      /<p class="comment comment-item"[^>]*>([\s\S]*?)<\/p>/
+    );
+    const comment = commentMatch
+      ? commentMatch[1].replace(/<[^>]+>/g, "").trim()
+      : "";
+
+    // ID
+    const idMatch = link.match(/\/subject\/(\d+)\//);
+    const externalId = idMatch ? idMatch[1] : "";
+
+    items.push({
+      title,
+      originalTitle: "",
+      externalUrl: link,
+      externalId,
+      finishedAt: date ? new Date(date) : null,
+      rating: rating || null,
+      review: comment || null,
+      coverUrl,
+      intro: undefined,
+    });
+  }
+
+  return items;
+}
+
 function parseGamePage(
   html: string
 ): (Omit<ParsedDoubanItem, "type" | "status"> & { intro?: string })[] {
@@ -343,6 +410,12 @@ function parseGamePage(
     const idMatch = link.match(/\/game\/(\d+)\//);
     const externalId = idMatch ? idMatch[1] : "";
 
+    // 封面图（优先 .pic 下的 img，否则取第一个 img）
+    const coverMatch =
+      block.match(/<div class="pic">[\s\S]*?<img[^>]+src="([^"]+)"/) ||
+      block.match(/<img[^>]+src="([^"]+)"/);
+    const coverUrl = coverMatch ? coverMatch[1] : null;
+
     items.push({
       title,
       originalTitle: "",
@@ -351,7 +424,7 @@ function parseGamePage(
       finishedAt: date ? new Date(date) : null,
       rating: rating || null,
       review: null,
-      coverUrl: null,
+      coverUrl,
       intro: undefined,
     });
   }
@@ -472,7 +545,7 @@ async function fetchCategory(
     const url = `${category.base}/people/${userId}/${category.path}${sep}start=${start}&sort=time&rating=all&filter=all&mode=grid`;
 
     try {
-      const html = await fetchPage(url);
+      const html = await fetchPage(url, category.base + "/");
 
       if (totalItems === undefined) {
         const totalMatch = html.match(
@@ -483,7 +556,14 @@ async function fetchCategory(
         }
       }
 
-      const items = isGame ? parseGamePage(html) : parseGridPage(html);
+      let items;
+      if (isGame) {
+        items = parseGamePage(html);
+      } else if (category.type === "book") {
+        items = parseBookPage(html);
+      } else {
+        items = parseGridPage(html);
+      }
 
       if (items.length === 0) break;
 
