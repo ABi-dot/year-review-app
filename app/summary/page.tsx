@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toPng } from "html-to-image";
+import AISummaryCard from "@/components/ai-summary-card";
 
 interface SummaryItem {
   id: string;
@@ -194,6 +195,11 @@ export default function SummaryPage() {
                 )}
                 {exporting ? "导出中..." : "导出长图"}
               </Button>
+            </div>
+
+            {/* AI 年度总结 */}
+            <div className="mb-10">
+              <AISummaryCard year={year} />
             </div>
 
             {/* 网页版展示 */}

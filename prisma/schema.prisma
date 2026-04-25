@@ -81,9 +81,10 @@ model PlaceDetail {
 model YearSummary {
   id        String   @id @default(cuid())
   year      Int
-  template  String
-  imageUrl  String?
+  style     String
   content   String?
   createdAt DateTime @default(now())
+
+  @@unique([year, style])
 }
 

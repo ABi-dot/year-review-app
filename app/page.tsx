@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ItemType, ITEM_TYPE_LABELS } from "@/lib/types";
-import { Plus, Pencil, Trash2, Star, LayoutGrid, List, Trophy } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, LayoutGrid, List, Trophy, Sparkles, Settings } from "lucide-react";
 import { format } from "date-fns";
 import DoubanImportDialog from "@/components/douban-import-dialog";
 
@@ -124,7 +124,25 @@ export default function HomePage() {
               年度总结
             </Button>
           </Link>
+          <Link href="/recommend">
+            <Button
+              variant="outline"
+              className="rounded-full border-2 border-primary/30 hover:border-primary hover:bg-primary/10"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              AI 推荐
+            </Button>
+          </Link>
           <DoubanImportDialog onSuccess={fetchItems} />
+          <Link href="/settings">
+            <Button
+              variant="outline"
+              className="rounded-full border-2 border-primary/30 hover:border-primary hover:bg-primary/10"
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              设置
+            </Button>
+          </Link>
           <Link href="/items/new">
             <Button className="rounded-full shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow">
               <Plus className="w-4 h-4 mr-1" />
