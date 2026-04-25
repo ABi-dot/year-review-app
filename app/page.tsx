@@ -192,7 +192,7 @@ export default function HomePage() {
               className="overflow-hidden group rounded-2xl border-2 border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <div className="relative aspect-[2/3] bg-muted overflow-hidden">
+              <div className="relative aspect-[2/3] bg-muted overflow-hidden rounded-2xl m-3">
                 {item.coverUrl ? (
                   <img
                     src={
@@ -201,23 +201,23 @@ export default function HomePage() {
                         : item.coverUrl
                     }
                     alt={item.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-2xl"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm rounded-2xl">
                     暂无封面
                   </div>
                 )}
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-3 left-3">
                   <Badge
                     variant="outline"
-                    className={ITEM_TYPE_COLORS[item.type]}
+                    className={ITEM_TYPE_COLORS[item.type] + " rounded-full text-[10px] px-2 py-0.5 backdrop-blur-sm bg-white/80"}
                   >
                     {ITEM_TYPE_LABELS[item.type]}
                   </Badge>
                 </div>
                 {item.rating !== null && (
-                  <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-0.5 rounded text-sm flex items-center gap-1">
+                  <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {item.rating}
                   </div>

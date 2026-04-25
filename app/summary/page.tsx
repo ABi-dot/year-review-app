@@ -49,19 +49,19 @@ const TYPE_ICONS: Record<ItemType, React.ReactNode> = {
 };
 
 const TYPE_COLORS: Record<ItemType, string> = {
-  BOOK: "text-amber-400",
-  MOVIE: "text-rose-400",
-  TV: "text-purple-400",
-  GAME: "text-emerald-400",
-  PLACE: "text-sky-400",
+  BOOK: "text-[#E67E22]",
+  MOVIE: "text-[#E05588]",
+  TV: "text-[#9B59B6]",
+  GAME: "text-[#27AE60]",
+  PLACE: "text-[#2980B9]",
 };
 
 const TYPE_BG_COLORS: Record<ItemType, string> = {
-  BOOK: "bg-amber-500",
-  MOVIE: "bg-rose-500",
-  TV: "bg-purple-500",
-  GAME: "bg-emerald-500",
-  PLACE: "bg-sky-500",
+  BOOK: "bg-[#FFB347]",
+  MOVIE: "bg-[#FF6B9D]",
+  TV: "bg-[#C084FC]",
+  GAME: "bg-[#4ADE80]",
+  PLACE: "bg-[#60A5FA]",
 };
 
 const MONTH_LABELS = [
@@ -131,25 +131,37 @@ export default function SummaryPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Link href="/">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="rounded-full">
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 返回
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">年度总结</h1>
+            <h1
+              className="text-3xl font-bold"
+              style={{ fontFamily: "var(--font-display), serif" }}
+            >
+              年度总结
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="rounded-full"
               onClick={() => setYear((y) => y - 1)}
             >
               {year - 1}
             </Button>
-            <span className="text-lg font-semibold px-2">{year}</span>
+            <span
+              className="text-2xl font-bold px-3"
+              style={{ fontFamily: "var(--font-display), serif" }}
+            >
+              {year}
+            </span>
             <Button
               variant="outline"
               size="sm"
+              className="rounded-full"
               onClick={() => setYear((y) => y + 1)}
               disabled={year >= new Date().getFullYear()}
             >
@@ -159,16 +171,22 @@ export default function SummaryPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-20 text-muted-foreground">加载中...</div>
+          <div className="text-center py-20 text-muted-foreground text-lg">
+            加载中...
+          </div>
         ) : !data || data.totalItems === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
-            {year} 年还没有记录
+            <p className="text-lg">{year} 年还没有记录</p>
           </div>
         ) : (
           <>
             {/* 导出按钮 */}
-            <div className="flex justify-center mb-6">
-              <Button onClick={handleExport} disabled={exporting}>
+            <div className="flex justify-center mb-8">
+              <Button
+                onClick={handleExport}
+                disabled={exporting}
+                className="rounded-full shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow"
+              >
                 {exporting ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                 ) : (
@@ -179,15 +197,22 @@ export default function SummaryPage() {
             </div>
 
             {/* 网页版展示 */}
-            <div className="space-y-8 mb-8">
+            <div className="space-y-10 mb-10">
               {/* 年度统计 */}
               <div className="flex flex-wrap justify-center gap-4">
                 {activeTypes.map(([type, count]) => (
-                  <Card key={type} className="w-32">
-                    <CardContent className="p-4 flex flex-col items-center gap-1">
-                      <div className={TYPE_COLORS[type]}>{TYPE_ICONS[type]}</div>
-                      <div className="text-2xl font-bold">{count}</div>
-                      <div className="text-xs text-muted-foreground">
+                  <Card
+                    key={type}
+                    className="w-36 rounded-2xl border-2 border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
+                  >
+                    <CardContent className="p-5 flex flex-col items-center gap-2">
+                      <div
+                        className={`p-2.5 rounded-full bg-white shadow-sm ${TYPE_COLORS[type]}`}
+                      >
+                        {TYPE_ICONS[type]}
+                      </div>
+                      <div className="text-3xl font-extrabold">{count}</div>
+                      <div className="text-xs text-muted-foreground font-medium">
                         {ITEM_TYPE_LABELS[type]}
                       </div>
                     </CardContent>
@@ -196,26 +221,31 @@ export default function SummaryPage() {
               </div>
 
               {/* 月度分布 */}
-              <Card>
+              <Card className="rounded-2xl border-2 border-border">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">月度分布</h3>
-                  <div className="flex items-end gap-2 h-40">
+                  <h3
+                    className="text-xl font-bold mb-5"
+                    style={{ fontFamily: "var(--font-display), serif" }}
+                  >
+                    月度分布
+                  </h3>
+                  <div className="flex items-end gap-[6px] h-40">
                     {data.monthlyCounts.map((count, idx) => (
                       <div
                         key={idx}
                         className="flex-1 flex flex-col items-center gap-1"
                       >
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs font-bold text-primary">
                           {count > 0 ? count : ""}
                         </div>
                         <div
-                          className="w-full bg-primary/80 rounded-t"
+                          className="w-full bg-primary/80 rounded-t-lg"
                           style={{
                             height: `${(count / maxMonthly) * 100}%`,
                             minHeight: count > 0 ? "4px" : "0",
                           }}
                         />
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-[10px] text-muted-foreground font-medium">
                           {MONTH_LABELS[idx]}
                         </div>
                       </div>
@@ -230,21 +260,24 @@ export default function SummaryPage() {
                 if (!items || items.length === 0) return null;
                 return (
                   <div key={type}>
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <h3
+                      className="text-xl font-bold mb-4 flex items-center gap-2"
+                      style={{ fontFamily: "var(--font-display), serif" }}
+                    >
                       <span className={TYPE_COLORS[type]}>{TYPE_ICONS[type]}</span>
                       {ITEM_TYPE_LABELS[type]}
                       <span className="text-sm text-muted-foreground font-normal">
                         ({items.length})
                       </span>
                     </h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {items.map((item) => (
                         <div
                           key={item.id}
-                          className="w-[calc(20%-8px)] min-w-[80px] aspect-[2/3] bg-muted rounded overflow-hidden relative"
+                          className="w-[calc(20%-12px)] min-w-[80px] aspect-[2/3] bg-muted rounded-xl overflow-hidden relative shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
                         >
                           {item.rating === 5 && (
-                            <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-[10px] font-bold text-center py-0.5 z-10">
+                            <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-[10px] font-bold text-center py-0.5 z-10 rounded-t-xl">
                               推荐
                             </div>
                           )}

@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Zap, Globe, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface ScrapeProgress {
   category: string;
@@ -136,30 +136,43 @@ export default function DoubanImportDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            className="rounded-full border-2 border-primary/30 hover:border-primary hover:bg-primary/10"
+          >
             <Download className="w-4 h-4 mr-1" />
             导入豆瓣
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>导入豆瓣收藏</DialogTitle>
-          <DialogDescription>
-            {mode === "rss"
-              ? "通过 RSS 快速导入最近的书/影/游收藏记录（约 10-20 条）"
-              : "全量抓取所有收藏记录，包括历史数据（可能需要几分钟）"}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md rounded-3xl border-2 border-border p-0 overflow-hidden">
+        <div className="bg-gradient-to-br from-[#FFE4C4]/40 to-[#FFB347]/20 px-6 pt-6 pb-4">
+          <DialogHeader>
+            <DialogTitle
+              className="text-2xl font-bold"
+              style={{ fontFamily: "var(--font-display), serif" }}
+            >
+              导入豆瓣收藏
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {mode === "rss"
+                ? "通过 RSS 快速导入最近的书/影/游收藏记录（约 10-20 条）"
+                : "全量抓取所有收藏记录，包括历史数据（可能需要几分钟）"}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-5 px-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="douban-user">豆瓣用户 ID</Label>
+            <Label htmlFor="douban-user" className="font-semibold text-sm">
+              豆瓣用户 ID
+            </Label>
             <Input
               id="douban-user"
               placeholder="如：ahbei"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
+              className="rounded-xl border-2 focus-visible:ring-primary"
             />
             <p className="text-xs text-muted-foreground">
               在你的豆瓣个人主页 URL 中，如 douban.com/people/ahbei
@@ -167,37 +180,45 @@ export default function DoubanImportDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>导入模式</Label>
-            <div className="flex gap-2">
-              <Button
+            <Label className="font-semibold text-sm">导入模式</Label>
+            <div className="flex gap-2 bg-muted rounded-full p-1 border-2 border-border">
+              <button
                 type="button"
-                variant={mode === "rss" ? "default" : "outline"}
-                size="sm"
                 onClick={() => setMode("rss")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                  mode === "rss"
+                    ? "bg-white text-primary shadow-sm border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                RSS（快速，最近条目）
-              </Button>
-              <Button
+                <Zap className="w-4 h-4" />
+                RSS 快速
+              </button>
+              <button
                 type="button"
-                variant={mode === "scrape" ? "default" : "outline"}
-                size="sm"
                 onClick={() => setMode("scrape")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                  mode === "scrape"
+                    ? "bg-white text-[#E67E22] shadow-sm border border-[#FFB347]/40"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                全量抓取（较慢）
-              </Button>
+                <Globe className="w-4 h-4" />
+                全量抓取
+              </button>
             </div>
           </div>
 
           {mode === "scrape" && (
-            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded border border-amber-200">
-              全量抓取会遍历你的所有收藏页面，可能需要 1-3
+            <div className="text-sm text-[#B45309] bg-[#FFFBEB] p-4 rounded-2xl border-2 border-[#FDE68A]">
+              <span className="font-semibold">温馨提示：</span>全量抓取会遍历你的所有收藏页面，可能需要 1-3
               分钟。过程中请保持页面打开，不要关闭弹窗。
             </div>
           )}
 
           {loading && mode === "scrape" && progress && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-3 bg-muted/50 p-4 rounded-2xl border-2 border-border">
+              <div className="flex justify-between text-sm font-medium">
                 <span>
                   正在抓取：{progress.category}（第 {progress.page} 页）
                 </span>
@@ -205,9 +226,9 @@ export default function DoubanImportDialog({
                   {progress.currentCategoryIndex + 1} / {progress.totalCategories}
                 </span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-background rounded-full h-3 overflow-hidden border border-border">
                 <div
-                  className="bg-primary h-full transition-all duration-500"
+                  className="bg-gradient-to-r from-primary to-[#FFB347] h-full transition-all duration-500 rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -218,17 +239,22 @@ export default function DoubanImportDialog({
           )}
 
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded">
+            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-4 rounded-2xl border-2 border-destructive/20">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               {error}
             </div>
           )}
 
           {result && (
-            <div className="text-sm bg-muted p-3 rounded space-y-1">
-              <p>共解析 {result.total} 条记录</p>
-              <p className="text-green-600">成功导入 {result.created} 条</p>
+            <div className="text-sm bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-200 space-y-1.5">
+              <div className="flex items-center gap-2 text-emerald-800 font-semibold">
+                <CheckCircle2 className="w-4 h-4" />
+                导入完成
+              </div>
+              <p className="text-emerald-700">共解析 {result.total} 条记录</p>
+              <p className="text-emerald-600 font-medium">成功导入 {result.created} 条</p>
               {result.skipped > 0 && (
-                <p className="text-muted-foreground">
+                <p className="text-emerald-600/70">
                   跳过 {result.skipped} 条（已存在）
                 </p>
               )}
@@ -236,13 +262,18 @@ export default function DoubanImportDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <div className="flex justify-end gap-2 px-6 pb-6 pt-2">
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            className="rounded-full border-2"
+          >
             关闭
           </Button>
           <Button
             onClick={handleImport}
             disabled={loading || !userId.trim()}
+            className="rounded-full shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow"
           >
             {loading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
             {loading ? "导入中..." : "开始导入"}
