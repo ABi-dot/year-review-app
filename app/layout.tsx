@@ -1,14 +1,19 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { Nunito, DM_Serif_Display } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'})
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800'],
+})
 
-const fontMono = Geist_Mono({
+const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-display",
+  weight: "400",
 })
 
 export default function RootLayout({
@@ -18,11 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn("antialiased", nunito.variable, dmSerif.variable)}
     >
-      <body>
+      <body className="font-sans">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
