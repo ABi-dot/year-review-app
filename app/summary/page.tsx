@@ -103,8 +103,8 @@ export default function SummaryPage() {
     setExporting(true);
     try {
       const dataUrl = await toPng(exportRef.current, {
-        quality: 0.95,
-        pixelRatio: 2,
+        quality: 1,
+        pixelRatio: 3,
         backgroundColor: "#0f172a",
       });
       const link = document.createElement("a");
@@ -274,10 +274,10 @@ export default function SummaryPage() {
                       {items.map((item) => (
                         <div
                           key={item.id}
-                          className="w-[calc(20%-12px)] min-w-[80px] aspect-[2/3] bg-muted rounded-xl overflow-hidden relative shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                          className="w-[calc(20%-12px)] min-w-[80px] aspect-[2/3] bg-muted overflow-hidden relative shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
                         >
                           {item.rating === 5 && (
-                            <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-[10px] font-bold text-center py-0.5 z-10 rounded-t-xl">
+                            <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-[10px] font-bold text-center py-0.5 z-10">
                               推荐
                             </div>
                           )}
@@ -310,23 +310,23 @@ export default function SummaryPage() {
             <div className="flex justify-center">
               <div
                 ref={exportRef}
-                className="w-[400px] bg-slate-900 text-white p-6 space-y-6"
+                className="w-[750px] bg-slate-900 text-white p-10 space-y-10"
                 style={{ fontFamily: "system-ui, sans-serif" }}
               >
                 {/* 标题 */}
                 <div className="text-center">
-                  <p className="text-sm text-slate-400 mb-1">这是</p>
-                  <h2 className="text-4xl font-bold tracking-tight">{year}</h2>
+                  <p className="text-xl text-slate-400 mb-2">这是</p>
+                  <h2 className="text-7xl font-bold tracking-tight">{year}</h2>
                 </div>
 
                 {/* 年度数字 */}
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-6">
                   {activeTypes.map(([type, count]) => (
                     <div key={type} className="text-center">
-                      <div className={`text-xl font-bold ${TYPE_COLORS[type]}`}>
+                      <div className={`text-3xl font-bold ${TYPE_COLORS[type]}`}>
                         {count}
                       </div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-lg text-slate-400">
                         {ITEM_TYPE_LABELS[type]}
                       </div>
                     </div>
@@ -335,7 +335,7 @@ export default function SummaryPage() {
 
                 {/* 月度分布 */}
                 <div>
-                  <div className="flex items-end gap-[2px] h-24">
+                  <div className="flex items-end gap-[2px] h-48">
                     {data.monthlyCounts.map((count, idx) => (
                       <div
                         key={idx}
@@ -349,7 +349,7 @@ export default function SummaryPage() {
                       />
                     ))}
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                  <div className="flex justify-between text-base text-slate-500 mt-2">
                     <span>1月</span>
                     <span>12月</span>
                   </div>
@@ -361,21 +361,21 @@ export default function SummaryPage() {
                   if (!items || items.length === 0) return null;
                   return (
                     <div key={type}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-1 h-4 rounded ${TYPE_BG_COLORS[type]}`} />
-                        <span className="text-sm font-semibold">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className={`w-1.5 h-6 rounded ${TYPE_BG_COLORS[type]}`} />
+                        <span className="text-xl font-semibold">
                           {ITEM_TYPE_LABELS[type]}
                         </span>
-                        <span className="text-xs text-slate-400">({items.length})</span>
+                        <span className="text-lg text-slate-400">({items.length})</span>
                       </div>
-                      <div className="grid grid-cols-4 gap-1">
+                      <div className="grid grid-cols-5 gap-2">
                         {items.map((item) => (
                           <div
                             key={item.id}
-                            className="aspect-[2/3] bg-slate-800 rounded overflow-hidden relative"
+                            className="aspect-[2/3] bg-slate-800 overflow-hidden relative"
                           >
                             {item.rating === 5 && (
-                              <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-[8px] font-bold text-center py-[1px] z-10">
+                              <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-white text-xs font-bold text-center py-0.5 z-10">
                                 推荐
                               </div>
                             )}
@@ -392,7 +392,7 @@ export default function SummaryPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-500 text-center p-1 leading-tight">
+                              <div className="w-full h-full flex items-center justify-center text-sm text-slate-500 text-center p-2 leading-tight">
                                 {item.title}
                               </div>
                             )}
@@ -404,7 +404,7 @@ export default function SummaryPage() {
                 })}
 
                 {/* 底部 */}
-                <div className="text-center text-xs text-slate-500 pt-4 border-t border-slate-800">
+                <div className="text-center text-lg text-slate-500 pt-8 border-t border-slate-800">
                   <p>年度回顾 · {year}</p>
                 </div>
               </div>

@@ -151,7 +151,7 @@ export default function TimelinePage() {
                 {summaryEntries.map(([type, count]) => (
                   <Card
                     key={type}
-                    className="w-36 rounded-2xl border-2 border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
+                    className="w-36 border-2 border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
                   >
                     <CardContent className="p-4 flex flex-col items-center gap-2">
                       <div
@@ -191,10 +191,10 @@ export default function TimelinePage() {
                   <div className="space-y-4">
                     {monthGroup.items.map((item) => (
                       <Link key={item.id} href={`/items/${item.id}/edit`}>
-                        <Card className="overflow-hidden hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer rounded-2xl border-2 border-border">
+                        <Card className="overflow-hidden hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer border-2 border-border">
                           <div className="flex gap-4 p-4">
                             {/* 封面 */}
-                            <div className="w-20 h-28 flex-shrink-0 bg-muted rounded-xl overflow-hidden">
+                            <div className="w-20 h-28 flex-shrink-0 bg-muted overflow-hidden">
                               {item.coverUrl ? (
                                 <img
                                   src={

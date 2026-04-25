@@ -189,10 +189,10 @@ export default function HomePage() {
           {items.map((item, idx) => (
             <Card
               key={item.id}
-              className="overflow-hidden group rounded-2xl border-2 border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300"
+              className="overflow-hidden group border-2 border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 rounded-none p-0 gap-0"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <div className="relative aspect-[2/3] bg-muted overflow-hidden rounded-2xl m-3">
+              <div className="relative aspect-[2/3] bg-muted overflow-hidden">
                 {item.coverUrl ? (
                   <img
                     src={
@@ -201,14 +201,14 @@ export default function HomePage() {
                         : item.coverUrl
                     }
                     alt={item.title}
-                    className="w-full h-full object-cover rounded-2xl"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm rounded-2xl">
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
                     暂无封面
                   </div>
                 )}
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-2 left-2">
                   <Badge
                     variant="outline"
                     className={ITEM_TYPE_COLORS[item.type] + " rounded-full text-[10px] px-2 py-0.5 backdrop-blur-sm bg-white/80"}
@@ -217,13 +217,13 @@ export default function HomePage() {
                   </Badge>
                 </div>
                 {item.rating !== null && (
-                  <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
+                  <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     {item.rating}
                   </div>
                 )}
               </div>
-              <CardHeader className="pb-2 px-4 pt-3">
+              <CardHeader className="px-3 pt-2.5 pb-1">
                 <CardTitle
                   className="text-sm leading-tight line-clamp-2 font-bold"
                   style={{ fontFamily: "var(--font-sans), sans-serif" }}
@@ -236,7 +236,7 @@ export default function HomePage() {
                   </p>
                 )}
               </CardHeader>
-              <CardContent className="pt-0 px-4 pb-4 space-y-2">
+              <CardContent className="px-3 pb-3 pt-0 space-y-1.5">
                 {item.finishedAt && (
                   <p className="text-xs text-muted-foreground font-medium">
                     {format(new Date(item.finishedAt), "yyyy.MM.dd")}
@@ -260,7 +260,7 @@ export default function HomePage() {
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2 pt-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div className="flex gap-2 pt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
                   <Link href={`/items/${item.id}/edit`} className="flex-1">
                     <Button
                       variant="outline"
@@ -301,9 +301,9 @@ export default function HomePage() {
               <div className="space-y-4">
                 {group.items.map((item) => (
                   <Link key={item.id} href={`/items/${item.id}/edit`}>
-                    <Card className="overflow-hidden hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer rounded-2xl border-2 border-border">
+                    <Card className="overflow-hidden hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer border-2 border-border">
                       <div className="flex gap-4 p-4">
-                        <div className="w-20 h-28 flex-shrink-0 bg-muted rounded-xl overflow-hidden">
+                        <div className="w-20 h-28 flex-shrink-0 bg-muted overflow-hidden">
                           {item.coverUrl ? (
                             <img
                               src={
