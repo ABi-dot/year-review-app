@@ -22,6 +22,7 @@ interface RecommendItem {
   type: string;
   creator?: string;
   year?: string;
+  cover?: string;
   reason: string;
 }
 
@@ -31,33 +32,52 @@ export default function AIRecommendCard({ item }: { item: RecommendItem }) {
 
   return (
     <Card className="border-2 border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 cursor-pointer">
-      <CardContent className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-base leading-tight">{item.title}</h4>
-            {item.creator && (
-              <p className="text-xs text-muted-foreground mt-0.5">{item.creator}</p>
+      <CardContent className="p-4">
+        <div className="flex gap-4">
+          {item.cover && (
+            <div className="w-24 h-36 flex-shrink-0 overflow-hidden bg-muted shadow-sm">
+              <img
+                src={
+                  item.cover.includes("doubanio.com")
+                    ? `/api/proxy/image?url=${encodeURIComponent(item.cover)}`
+                    : item.cover
+                }
+                alt={item.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
+          )}
+          <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+            <div className="space-y-1.5">
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="font-bold text-lg leading-snug">{item.title}</h4>
+                <Badge
+                  variant="outline"
+                  className={
+                    (TYPE_COLORS[type] ?? "bg-muted text-muted-foreground") +
+                    " flex-shrink-0 rounded-full text-[10px]"
+                  }
+                >
+                  {TYPE_ICONS[type]}
+                  <span className="ml-1">{label}</span>
+                </Badge>
+              </div>
+              {item.creator && (
+                <p className="text-sm text-muted-foreground">{item.creator}</p>
+              )}
+            </div>
+
+            <p className="text-sm text-primary font-medium leading-relaxed">
+              {item.reason}
+            </p>
+
+            {item.year && (
+              <p className="text-xs text-muted-foreground">{item.year}</p>
             )}
           </div>
-          <Badge
-            variant="outline"
-            className={
-              (TYPE_COLORS[type] ?? "bg-muted text-muted-foreground") +
-              " flex-shrink-0 rounded-full text-[10px]"
-            }
-          >
-            {TYPE_ICONS[type]}
-            <span className="ml-1">{label}</span>
-          </Badge>
         </div>
-
-        <p className="text-sm text-primary font-medium leading-relaxed">
-          {item.reason}
-        </p>
-
-        {item.year && (
-          <p className="text-xs text-muted-foreground">{item.year}</p>
-        )}
       </CardContent>
     </Card>
   );

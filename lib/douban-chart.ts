@@ -2,6 +2,7 @@ export interface ChartItem {
   title: string;
   creator: string;
   rating: string;
+  cover?: string;
 }
 
 const UA =
@@ -18,99 +19,79 @@ async function fetchHtml(url: string, referer?: string): Promise<string> {
   return res.text();
 }
 
-function cleanText(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// 豆瓣电影/剧集热门榜（chart 页面）
+// 豆瓣电影热门榜（JSON API）
 export async function fetchMovieChart(): Promise<ChartItem[]> {
-  const html = await fetchHtml("https://movie.douban.com/chart", "https://movie.douban.com");
-  const items: ChartItem[] = [];
-
-  // 解析 <tr class="item">...</tr>
-  const rows = html.split(/<tr class="item"[^>]*>/);
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-
-    // 标题
-    const titleMatch = row.match(/<a[^>]+class="title"[^>]*>([^<]+)<\/a>/);
-    if (!titleMatch) continue;
-    const title = cleanText(titleMatch[1]);
-
-    // 导演/主演
-    const creatorMatch = row.match(/<p class="pl">([^<]+)<\/p>/);
-    const creatorRaw = creatorMatch ? creatorMatch[1] : "";
-    // 取"导演: xxx"或第一段
-    const creator = creatorRaw.split(" / ")[0].replace(/^导演:\s*/, "").trim();
-
-    // 评分
-    const ratingMatch = row.match(/<span class="rating_nums">([\d.]+)<\/span>/);
-    const rating = ratingMatch ? ratingMatch[1] : "";
-
-    if (title) {
-      items.push({ title, creator, rating });
+  const res = await fetch(
+    "https://movie.douban.com/j/search_subjects?type=movie&tag=%E7%83%AD%E9%97%A8&sort=recommend&page_limit=20&page_start=0",
+    {
+      headers: {
+        "User-Agent": UA,
+        Accept: "application/json",
+        Referer: "https://movie.douban.com",
+      },
     }
-  }
-
-  return items.slice(0, 20);
-}
-
-// 豆瓣剧集热门
-export async function fetchTVChart(): Promise<ChartItem[]> {
-  const html = await fetchHtml(
-    "https://movie.douban.com/tv/#!type=tv&status=P&sort=recommend",
-    "https://movie.douban.com"
   );
-  const items: ChartItem[] = [];
-
-  const rows = html.split(/<tr class="item"[^>]*>/);
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-
-    const titleMatch = row.match(/<a[^>]+class="title"[^>]*>([^<]+)<\/a>/);
-    if (!titleMatch) continue;
-    const title = cleanText(titleMatch[1]);
-
-    const creatorMatch = row.match(/<p class="pl">([^<]+)<\/p>/);
-    const creatorRaw = creatorMatch ? creatorMatch[1] : "";
-    const creator = creatorRaw.split(" / ")[0].replace(/^导演:\s*/, "").trim();
-
-    const ratingMatch = row.match(/<span class="rating_nums">([\d.]+)<\/span>/);
-    const rating = ratingMatch ? ratingMatch[1] : "";
-
-    if (title) {
-      items.push({ title, creator, rating });
-    }
-  }
-
-  return items.slice(0, 20);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for movie chart`);
+  const data = (await res.json()) as {
+    subjects: { title: string; rate: string; cover: string }[];
+  };
+  return data.subjects.map((s) => ({
+    title: s.title,
+    creator: "",
+    rating: s.rate,
+    cover: s.cover,
+  }));
 }
 
-// 豆瓣书籍热门（新书榜）
+// 豆瓣剧集热门（JSON API）
+export async function fetchTVChart(): Promise<ChartItem[]> {
+  const res = await fetch(
+    "https://movie.douban.com/j/search_subjects?type=tv&tag=%E7%83%AD%E9%97%A8&sort=recommend&page_limit=20&page_start=0",
+    {
+      headers: {
+        "User-Agent": UA,
+        Accept: "application/json",
+        Referer: "https://movie.douban.com",
+      },
+    }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status} for TV chart`);
+  const data = (await res.json()) as {
+    subjects: { title: string; rate: string; cover: string }[];
+  };
+  return data.subjects.map((s) => ({
+    title: s.title,
+    creator: "",
+    rating: s.rate,
+    cover: s.cover,
+  }));
+}
+
+// 豆瓣书籍热门（新书榜 HTML）
 export async function fetchBookChart(): Promise<ChartItem[]> {
   const html = await fetchHtml("https://book.douban.com/chart", "https://book.douban.com");
   const items: ChartItem[] = [];
 
-  // 解析 ul.chart-dashed-list > li
-  const lis = html.split(/<li[^>]*class="[^"]*chart-dashed-list[^"]*"[^>]*>/);
+  const lis = html.split(/<li class="media clearfix">/);
   for (let i = 1; i < lis.length; i++) {
     const li = lis[i];
 
-    const titleMatch = li.match(/<a[^>]+title="([^"]+)"/);
+    const titleMatch = li.match(/<h2[^>]*>\s*<a[^>]*class="fleft"[^>]*>([^<]+)<\/a>/);
     if (!titleMatch) continue;
     const title = titleMatch[1].trim();
 
-    const authorMatch = li.match(/<p[^>]*class="[^"]*color-gray[^"]*"[^>]*>([^<]+)<\/p>/);
-    const creator = authorMatch ? cleanText(authorMatch[1]).split(" / ")[0].trim() : "";
+    const abstractMatch = li.match(/<p class="subject-abstract color-gray">([\s\S]*?)<\/p>/);
+    const abstract = abstractMatch ? abstractMatch[1].trim() : "";
+    const creator = abstract.split(" / ")[0].trim();
 
-    const ratingMatch = li.match(/<span class="rating_nums">([\d.]+)<\/span>/);
+    const ratingMatch = li.match(/<span class="font-small fleft">([\d.]+)<\/span>/);
     const rating = ratingMatch ? ratingMatch[1] : "";
 
+    const coverMatch = li.match(/<img[^>]*class="subject-cover"[^>]*src="([^"]+)"/);
+    const cover = coverMatch ? coverMatch[1] : "";
+
     if (title) {
-      items.push({ title, creator, rating });
+      items.push({ title, creator, rating, cover });
     }
   }
 

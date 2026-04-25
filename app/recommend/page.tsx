@@ -20,6 +20,7 @@ interface RecommendItem {
   type: string;
   creator?: string;
   year?: string;
+  cover?: string;
   reason: string;
 }
 
@@ -96,6 +97,34 @@ export default function RecommendPage() {
   const currentItems = results[currentKey] ?? [];
   const currentHasLoaded = loadedKeys.has(currentKey);
 
+  // 单次请求核心逻辑
+  const doFetch = async (
+    type: "hot" | "personal",
+    cat: string,
+    config: { endpoint: string; apiKey: string; model: string } | undefined,
+    force: boolean
+  ): Promise<RecommendItem[]> => {
+    const cKey = getKey(type, cat);
+    if (!force && loadedKeys.has(cKey) && (results[cKey]?.length ?? 0) > 0) {
+      return results[cKey] ?? [];
+    }
+
+    const res = await fetch("/api/ai/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type,
+        category: cat,
+        config,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "推荐生成失败");
+
+    return (data.recommendations ?? []) as RecommendItem[];
+  };
+
   const fetchRecommend = async (
     type: "hot" | "personal",
     cat: string,
@@ -112,26 +141,39 @@ export default function RecommendPage() {
     const config = getStoredConfig();
 
     try {
-      const res = await fetch("/api/ai/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          category: cat === "ALL" ? undefined : cat,
-          config,
-        }),
-      });
+      let allItems: RecommendItem[] = [];
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "推荐生成失败");
+      if (cat === "ALL" && type === "hot") {
+        // 热门推荐“全部”时，分别请求电影、剧集、书籍
+        const cats = ["MOVIE", "TV", "BOOK"];
+        const settled = await Promise.allSettled(
+          cats.map((c) => doFetch(type, c, config, force))
+        );
 
-      const items: RecommendItem[] = data.recommendations ?? [];
+        const errors: string[] = [];
+        for (let i = 0; i < settled.length; i++) {
+          const result = settled[i];
+          if (result.status === "fulfilled") {
+            allItems = [...allItems, ...result.value];
+          } else {
+            errors.push(
+              `${cats[i]}: ${result.reason instanceof Error ? result.reason.message : "获取失败"}`
+            );
+          }
+        }
+
+        if (allItems.length === 0) {
+          throw new Error(errors.join("；") || "所有分类获取失败");
+        }
+      } else {
+        allItems = await doFetch(type, cat, config, force);
+      }
 
       // 按类型分发到各个分类 key，同时合并到“全部”
       setResults((prev) => {
-        const next: Record<string, RecommendItem[]> = { ...prev, [key]: items };
+        const next: Record<string, RecommendItem[]> = { ...prev, [key]: allItems };
         const byType: Record<string, RecommendItem[]> = {};
-        for (const item of items) {
+        for (const item of allItems) {
           const typeKey = getKey(type, item.type);
           if (!byType[typeKey]) byType[typeKey] = [];
           byType[typeKey].push(item);
@@ -143,7 +185,7 @@ export default function RecommendPage() {
           const allKey = getKey(type, "ALL");
           const existingAll = next[allKey] ?? prev[allKey] ?? [];
           const seen = new Set(existingAll.map((i) => i.title));
-          const merged = [...existingAll, ...items.filter((i) => !seen.has(i.title))];
+          const merged = [...existingAll, ...allItems.filter((i) => !seen.has(i.title))];
           next[allKey] = merged;
         }
         return next;
@@ -152,10 +194,10 @@ export default function RecommendPage() {
       setLoadedKeys((prev) => {
         const next = new Set(prev);
         next.add(key);
-        for (const item of items) {
+        for (const item of allItems) {
           next.add(getKey(type, item.type));
         }
-        if (cat !== "ALL" && items.length > 0) {
+        if (cat !== "ALL" && allItems.length > 0) {
           next.add(getKey(type, "ALL"));
         }
         return next;
@@ -179,7 +221,7 @@ export default function RecommendPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4 max-w-3xl">
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
         {/* 头部 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -245,7 +287,7 @@ export default function RecommendPage() {
         {/* 内容区 */}
         {!currentHasLoaded && !loading && !error && (
           <div className="text-center py-16 text-muted-foreground space-y-3">
-            {!hasConfig ? (
+            {tab === "personal" && !hasConfig ? (
               <>
                 <Sparkles className="w-10 h-10 mx-auto text-primary/40" />
                 <p className="text-lg">需要先配置 AI API 才能使用此功能</p>
@@ -323,9 +365,11 @@ export default function RecommendPage() {
                 换一批
               </Button>
             </div>
-            {currentItems.map((item, idx) => (
-              <AIRecommendCard key={idx} item={item} />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {currentItems.map((item, idx) => (
+                <AIRecommendCard key={idx} item={item} />
+              ))}
+            </div>
           </div>
         )}
 

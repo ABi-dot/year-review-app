@@ -190,9 +190,6 @@ export default function AISummaryCard({ year }: { year: number }) {
             <button
               onClick={() => {
                 setStyle("poem");
-                setContent(null);
-                setPersona(null);
-                setLoading(false);
                 setError("");
               }}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -206,9 +203,6 @@ export default function AISummaryCard({ year }: { year: number }) {
             <button
               onClick={() => {
                 setStyle("mbti");
-                setContent(null);
-                setPersona(null);
-                setLoading(false);
                 setError("");
               }}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
