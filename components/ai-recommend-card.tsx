@@ -37,6 +37,7 @@ export default function AIRecommendCard({ item }: { item: RecommendItem }) {
           {item.cover && (
             <div className="w-24 h-36 flex-shrink-0 overflow-hidden bg-muted shadow-sm">
               <img
+                key={item.cover}
                 src={
                   item.cover.includes("doubanio.com")
                     ? `/api/proxy/image?url=${encodeURIComponent(item.cover)}`

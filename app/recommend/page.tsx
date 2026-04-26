@@ -147,7 +147,7 @@ export default function RecommendPage() {
         // 热门推荐“全部”时，分别请求电影、剧集、书籍
         const cats = ["MOVIE", "TV", "BOOK"];
         const settled = await Promise.allSettled(
-          cats.map((c) => doFetch(type, c, config, force))
+          cats.map((c) => doFetch(type, c, config ?? undefined, force))
         );
 
         const errors: string[] = [];
@@ -166,7 +166,7 @@ export default function RecommendPage() {
           throw new Error(errors.join("；") || "所有分类获取失败");
         }
       } else {
-        allItems = await doFetch(type, cat, config, force);
+        allItems = await doFetch(type, cat, config ?? undefined, force);
       }
 
       // 按类型分发到各个分类 key，同时合并到“全部”

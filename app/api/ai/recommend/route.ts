@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { callAI, isAIConfigured } from "@/lib/ai";
 import { buildPersonalRecommendPrompt } from "@/lib/ai-prompts";
 import { fetchAllCharts } from "@/lib/douban-chart";
+import { searchDouban } from "@/lib/douban-search";
+import type { DoubanSearchResult } from "@/lib/douban-search";
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -146,7 +148,31 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ recommendations, source: "ai-personal" });
+      const enriched = await Promise.allSettled(
+        (recommendations as Record<string, unknown>[]).map(async (rec) => {
+          const title = typeof rec.title === "string" ? rec.title : "";
+          const rawType = typeof rec.type === "string" ? rec.type : "";
+          const type = ["MOVIE", "TV", "BOOK"].includes(rawType)
+            ? (rawType as "MOVIE" | "TV" | "BOOK")
+            : undefined;
+          if (!title || !type) return rec;
+          try {
+            const results = await searchDouban(title, type);
+            if (results.length > 0 && results[0].cover) {
+              return { ...rec, cover: results[0].cover };
+            }
+          } catch {
+            // 忽略搜索失败
+          }
+          return rec;
+        })
+      );
+
+      const finalRecommendations = enriched.map((r) =>
+        r.status === "fulfilled" ? r.value : (r.reason as Record<string, unknown>)
+      );
+
+      return NextResponse.json({ recommendations: finalRecommendations, source: "ai-personal" });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "推荐生成失败";

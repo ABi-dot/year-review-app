@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ItemType, ITEM_TYPE_LABELS } from "@/lib/types";
+import { Loader2, Search } from "lucide-react";
+
+interface SearchResult {
+  title: string;
+  originalTitle?: string;
+  creator?: string;
+  year?: string;
+  cover?: string;
+  url?: string;
+  type: ItemType;
+  externalId?: string;
+}
 
 interface Tag {
   id: string;
@@ -50,6 +62,13 @@ export default function ItemForm({
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchIndex, setSearchIndex] = useState(-1);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [form, setForm] = useState<ItemFormData>({
     title: "",
     originalTitle: "",
@@ -65,6 +84,9 @@ export default function ItemForm({
     ...initialData,
   });
 
+  const formRef = useRef(form);
+  formRef.current = form;
+
   useEffect(() => {
     fetch("/api/tags")
       .then((r) => r.json())
@@ -77,6 +99,82 @@ export default function ItemForm({
     },
     []
   );
+
+  const handleTitleChange = (value: string) => {
+    updateField("title", value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (value.trim().length < 1) {
+      setSearchOpen(false);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      const query = formRef.current.title.trim();
+      if (query.length < 1) {
+        setSearchOpen(false);
+        return;
+      }
+      const currentType = formRef.current.type;
+      const typeParam = currentType === "GAME" || currentType === "PLACE" ? "" : currentType;
+      setSearchLoading(true);
+      try {
+        const res = await fetch(
+          `/api/search/douban?q=${encodeURIComponent(query)}${typeParam ? `&type=${typeParam}` : ""}`
+        );
+        const data = (await res.json()) as { results: SearchResult[] };
+        setSearchResults(data.results.slice(0, 6));
+        setSearchOpen(data.results.length > 0);
+        setSearchIndex(-1);
+      } catch {
+        setSearchResults([]);
+        setSearchOpen(false);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500);
+  };
+
+  const selectResult = (result: SearchResult) => {
+    setForm((prev) => ({
+      ...prev,
+      title: result.title,
+      originalTitle: result.originalTitle || prev.originalTitle,
+      creator: result.creator || prev.creator,
+      coverUrl: result.cover || prev.coverUrl,
+      externalId: result.externalId || prev.externalId,
+      externalUrl: result.url || prev.externalUrl,
+      type: result.type,
+    }));
+    setSearchOpen(false);
+    setSearchResults([]);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!searchOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSearchIndex((i) => (i + 1) % searchResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSearchIndex((i) => (i - 1 + searchResults.length) % searchResults.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (searchIndex >= 0 && searchResults[searchIndex]) {
+        selectResult(searchResults[searchIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setSearchOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleTag = useCallback((tagId: string) => {
     setForm((prev) => ({
@@ -176,14 +274,74 @@ export default function ItemForm({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" ref={searchContainerRef}>
         <Label htmlFor="title">名称 *</Label>
-        <Input
-          id="title"
-          required
-          value={form.title}
-          onChange={(e) => updateField("title", e.target.value)}
-        />
+        <div className="relative">
+          <Input
+            id="title"
+            required
+            value={form.title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (searchResults.length > 0) setSearchOpen(true);
+            }}
+            placeholder="输入名称搜索豆瓣..."
+            className="pr-10"
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            {searchLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
+          </div>
+
+          {searchOpen && searchResults.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-background border-2 border-border rounded-xl shadow-lg overflow-hidden">
+              {searchResults.map((result, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors ${
+                    idx === searchIndex ? "bg-muted" : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => selectResult(result)}
+                  onMouseEnter={() => setSearchIndex(idx)}
+                >
+                  {result.cover && (
+                    <img
+                      src={`/api/proxy/image?url=${encodeURIComponent(result.cover)}`}
+                      alt=""
+                      className="w-10 h-14 object-cover flex-shrink-0 bg-muted"
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium truncate">
+                        {result.title}
+                      </span>
+                      {result.year && (
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          ({result.year})
+                        </span>
+                      )}
+                    </div>
+                    {result.creator && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {result.creator}
+                      </p>
+                    )}
+                    <Badge variant="outline" className="mt-1 text-[10px] rounded-full">
+                      {ITEM_TYPE_LABELS[result.type]}
+                    </Badge>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">

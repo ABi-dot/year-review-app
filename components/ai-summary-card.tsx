@@ -11,7 +11,7 @@ interface PersonaResult {
   title: string;
   label: string;
   description: string;
-  vibe: string;
+  vibe: string | string[];
   quote: string;
 }
 
