@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ALLOWED_IMAGE_HOSTS = ["doubanio.com", "img1.doubanio.com", "img2.doubanio.com", "img3.doubanio.com", "img9.doubanio.com", "qnmob3.doubanio.com"];
+
+function isAllowedImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_IMAGE_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith("." + host));
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
 
   if (!url) {
     return NextResponse.json({ error: "Missing url parameter" }, { status: 400 });
+  }
+
+  if (!isAllowedImageUrl(url)) {
+    return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
   }
 
   try {
