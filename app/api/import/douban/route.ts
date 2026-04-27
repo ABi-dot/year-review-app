@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { runRSSImport } from "@/lib/douban-import";
 import {
-  fetchDoubanRSS,
-  parseRSSItems,
-  parseDoubanItems,
-  supplementMovieDetails,
   scrapeDoubanCollections,
   ParsedDoubanItem,
 } from "@/lib/douban";
+import { prisma } from "@/lib/prisma";
 
 async function importItems(items: ParsedDoubanItem[]) {
   let created = 0;
@@ -56,18 +53,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (mode === "rss") {
-      const xml = await fetchDoubanRSS(userId);
-      const rssItems = parseRSSItems(xml);
-      const parsedItems = parseDoubanItems(rssItems);
-      await supplementMovieDetails(parsedItems);
-      const { created, skipped } = await importItems(parsedItems);
-
+      const result = await runRSSImport(userId);
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || "导入失败" },
+          { status: 500 }
+        );
+      }
       return NextResponse.json({
         success: true,
         mode: "rss",
-        total: parsedItems.length,
-        created,
-        skipped,
+        total: result.total,
+        created: result.created,
+        skipped: result.skipped,
       });
     }
 
@@ -84,7 +82,6 @@ export async function POST(request: NextRequest) {
               userId,
               async (progress) => {
                 send({ type: "progress", ...progress });
-                // 让出事件循环，确保数据被刷新到网络层
                 await new Promise((r) => setTimeout(r, 50));
               }
             );
