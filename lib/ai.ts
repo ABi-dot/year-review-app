@@ -29,7 +29,7 @@ function isAnthropic(endpoint: string): boolean {
   return endpoint.includes("anthropic.com");
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 60000): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 300000): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
