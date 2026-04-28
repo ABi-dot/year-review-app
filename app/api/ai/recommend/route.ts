@@ -20,16 +20,49 @@ export async function GET(request: NextRequest) {
       where: { type_category: { type, category } },
     });
 
-    if (!cached) {
-      return NextResponse.json({ error: "暂无缓存" }, { status: 404 });
+    if (cached) {
+      const items = JSON.parse(cached.items) as Record<string, unknown>[];
+      return NextResponse.json({
+        recommendations: items,
+        source: cached.source,
+        cachedAt: cached.updatedAt.toISOString(),
+      });
     }
 
-    const items = JSON.parse(cached.items) as Record<string, unknown>[];
-    return NextResponse.json({
-      recommendations: items,
-      source: cached.source,
-      cachedAt: cached.updatedAt.toISOString(),
-    });
+    // 如果是 ALL 且没有直接缓存，尝试合并各分类缓存
+    if (category === "ALL") {
+      const cats = ["MOVIE", "TV", "BOOK", "GAME"];
+      const merged: Record<string, unknown>[] = [];
+      let foundSource = "";
+      let latestUpdate: Date | null = null;
+
+      for (const cat of cats) {
+        const sub = await prisma.recommendation.findUnique({
+          where: { type_category: { type, category: cat } },
+        });
+        if (sub) {
+          const items = JSON.parse(sub.items) as Record<string, unknown>[];
+          const seen = new Set(merged.map((i) => i.title));
+          for (const item of items) {
+            if (!seen.has(item.title)) merged.push(item);
+          }
+          if (!foundSource) foundSource = sub.source;
+          if (!latestUpdate || sub.updatedAt > latestUpdate) {
+            latestUpdate = sub.updatedAt;
+          }
+        }
+      }
+
+      if (merged.length > 0) {
+        return NextResponse.json({
+          recommendations: merged,
+          source: foundSource,
+          cachedAt: latestUpdate?.toISOString(),
+        });
+      }
+    }
+
+    return NextResponse.json({ error: "暂无缓存" }, { status: 404 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "读取缓存失败";
     return NextResponse.json({ error: message }, { status: 500 });
