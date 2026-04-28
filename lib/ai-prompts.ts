@@ -117,14 +117,18 @@ ${itemsList}
 
 export function buildPersonalRecommendPrompt(
   userItems: ItemForPrompt[],
+  allTitles: string[],
   count = 8
 ): string {
   const itemsList = buildItemsList(userItems);
 
   return `你是一位资深文化推荐官。根据以下用户的偏好记录，推荐 ${count} 部 TA 可能喜欢但还没看过的作品（书/电影/剧集/游戏均可）。
 
-【用户已体验且高分的作品】
+【用户已体验且高分的作品（用于分析偏好）】
 ${itemsList}
+
+【用户已看过的全部作品（严禁推荐以下任何作品）】
+${allTitles.map((t) => `《${t}》`).join("、")}
 
 要求输出 JSON 对象，包含 recommendations 数组：
 {
@@ -143,7 +147,7 @@ ${itemsList}
 1. 作品必须是真实存在的经典或口碑佳作
 2. 推荐理由要个性化，引用用户喜欢的具体风格或创作者
 3. 必须跨类型推荐，推荐列表中要同时覆盖电影/剧集、书籍、游戏等不同类别，不能只集中在用户原本偏好的单一类型上
-4. 不要推荐用户记录中已出现的作品`;
+4. 绝对不要推荐【用户已看过的全部作品】列表中的任何作品`;
 }
 
 export interface ChartItem {

@@ -113,6 +113,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // 拉取全部已有作品标题，让 LLM 知道哪些不能推荐
+      const allItems = await prisma.item.findMany({
+        select: { title: true },
+      });
+      const allTitles = allItems.map((i) => i.title).filter((t): t is string => !!t);
+
       const promptItems = userItems.map((item) => ({
         title: item.title,
         type: item.type,
@@ -123,7 +129,7 @@ export async function POST(request: NextRequest) {
         finishedAt: item.finishedAt?.toISOString() ?? null,
       }));
 
-      const prompt = buildPersonalRecommendPrompt(promptItems, 8);
+      const prompt = buildPersonalRecommendPrompt(promptItems, allTitles, 8);
 
       const content = await callAI(
         [
