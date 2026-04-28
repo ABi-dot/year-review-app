@@ -55,6 +55,12 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// 豆瓣缩略图 URL 升级为高清图：/s/ /m/ → /l/
+function upgradeCoverUrl(url: string): string {
+  if (!url) return url;
+  return url.replace(/\/view\/subject\/(s|m)\//, "/view/subject/l/");
+}
+
 // ==================== RSS 模式 ====================
 
 export async function fetchDoubanRSS(userId: string): Promise<string> {
@@ -103,7 +109,7 @@ export function parseRSSItems(xml: string): DoubanRSSItem[] {
     const comment = commentMatch ? commentMatch[1].trim() : "";
 
     const coverMatch = desc.match(/<img[^>]+src="([^"]+)"/);
-    const coverUrl = coverMatch ? coverMatch[1] : "";
+    const coverUrl = coverMatch ? upgradeCoverUrl(coverMatch[1]) : "";
 
     items.push({ title, link, guid, pubDate, rating, comment, coverUrl });
   }
@@ -572,8 +578,15 @@ async function fetchCategory(
         const finalType =
           baseType === "MOVIE" ? guessMovieOrTV(item.title, item.intro) : baseType;
 
+        // 相对路径转为绝对路径，确保与 RSS 的 externalUrl 格式一致
+        let externalUrl = item.externalUrl;
+        if (externalUrl && !externalUrl.startsWith("http")) {
+          externalUrl = category.base.replace(/\/$/, "") + externalUrl;
+        }
+
         allItems.push({
           ...item,
+          externalUrl,
           type: finalType,
           status: category.status,
         });

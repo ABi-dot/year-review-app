@@ -11,8 +11,21 @@ async function importItems(items: ParsedDoubanItem[]) {
   let skipped = 0;
 
   for (const item of items) {
+    const whereConditions: Record<string, unknown>[] = [];
+    if (item.externalUrl) {
+      whereConditions.push({ externalUrl: item.externalUrl });
+    }
+    if (item.externalId) {
+      whereConditions.push({ externalId: item.externalId });
+    }
+
+    if (whereConditions.length === 0) {
+      skipped++;
+      continue;
+    }
+
     const existing = await prisma.item.findFirst({
-      where: { externalUrl: item.externalUrl },
+      where: { OR: whereConditions },
     });
 
     if (existing) {
