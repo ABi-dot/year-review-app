@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
           {
             role: "system",
             content:
-              "你是一位文化推荐官。你的任务是直接输出合法的 JSON 数组，禁止输出任何分析过程、解释、前言、后缀或 markdown 代码块标记。",
+              "你是一位文化推荐官。你的任务是直接输出合法的 JSON 数组文本，禁止输出任何分析过程、解释、前言、后缀。不要以 markdown 代码块（```json）包裹，直接输出纯字符串形式的 JSON。",
           },
           { role: "user", content: prompt + "\n\n【重要】直接输出 JSON 数组，不要有任何其他文字。" },
         ],
