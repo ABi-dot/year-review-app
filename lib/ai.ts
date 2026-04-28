@@ -29,6 +29,17 @@ function isAnthropic(endpoint: string): boolean {
   return endpoint.includes("anthropic.com");
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 60000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function callOpenAICompatible(
   config: AIConfig,
   messages: AIMessage[],
@@ -49,7 +60,9 @@ async function callOpenAICompatible(
     body.response_format = { type: "json_object" };
   }
 
-  const res = await fetch(url, {
+  console.log(`[AI] Request → ${url}, model=${config.model}, max_tokens=${body.max_tokens}`);
+
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -60,6 +73,7 @@ async function callOpenAICompatible(
   });
 
   const rawText = await res.text();
+  console.log(`[AI] Response status=${res.status}, length=${rawText.length}`);
 
   if (!res.ok) {
     throw new Error(`AI API error ${res.status}: ${rawText || "Empty response"}`);
@@ -83,8 +97,12 @@ async function callOpenAICompatible(
     throw new Error(data.error.message || "AI API error");
   }
 
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("AI returned empty content");
+  const msg = data.choices?.[0]?.message;
+  const content = msg?.content || msg?.reasoning_content;
+  if (!content) {
+    console.error("[AI] Empty content, raw response:", rawText.slice(0, 1000));
+    throw new Error("AI returned empty content");
+  }
   return content;
 }
 
@@ -114,7 +132,9 @@ async function callAnthropic(
     body.system = systemMsg.content;
   }
 
-  const res = await fetch(url, {
+  console.log(`[AI] Anthropic request → ${url}, model=${config.model}`);
+
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -126,6 +146,7 @@ async function callAnthropic(
   });
 
   const rawText = await res.text();
+  console.log(`[AI] Anthropic response status=${res.status}, length=${rawText.length}`);
 
   if (!res.ok) {
     throw new Error(`Anthropic API error ${res.status}: ${rawText || "Empty response"}`);
@@ -150,7 +171,10 @@ async function callAnthropic(
   }
 
   const text = data.content?.[0]?.text;
-  if (!text) throw new Error("Anthropic returned empty content");
+  if (!text) {
+    console.error("[AI] Anthropic empty content, raw:", rawText.slice(0, 1000));
+    throw new Error("Anthropic returned empty content");
+  }
   return text;
 }
 
