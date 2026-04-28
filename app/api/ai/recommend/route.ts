@@ -195,22 +195,20 @@ export async function POST(request: NextRequest) {
       }));
 
       const prompt = buildPersonalRecommendPrompt(promptItems, allTitles, 8);
-      console.log(`[Recommend] Prompt length: ${prompt.length} chars, allTitles count: ${allTitles.length}`);
 
       const content = await callAI(
         [
           {
             role: "system",
-            content:
-              "你是一位文化推荐官。你的任务是直接输出合法的 JSON 数组文本，禁止输出任何分析过程、解释、前言、后缀。不要以 markdown 代码块（```json）包裹，直接输出纯字符串形式的 JSON。",
+            content: "你是一位文化推荐官，只输出 JSON 数组，不要任何额外说明。",
           },
-          { role: "user", content: prompt + "\n\n【重要】直接输出 JSON 数组，不要有任何其他文字。" },
+          { role: "user", content: prompt },
         ],
         { temperature: 0.8, maxTokens: 32768, jsonMode: true },
         config
       );
 
-      console.log("[Recommend] AI full content:\n", content);
+      console.log("[Recommend] AI raw content:", content.slice(0, 500));
       const parsed = parseJSON(content);
       console.log("[Recommend] parsed count:", parsed.length);
 
@@ -262,55 +260,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function extractJSON(text: string): string {
-  // 先去掉 markdown 代码块
-  let clean = text.replace(/```json\s*|\s*```/g, "").trim();
-
-  // 如果整段是 JSON，直接返回
-  try {
-    JSON.parse(clean);
-    return clean;
-  } catch {
-    // 继续尝试提取
-  }
-
-  // 尝试找第一个 [ 或 { 到最后一个 ] 或 }
-  const firstBracket = clean.search(/[\[{]/);
-  if (firstBracket !== -1) {
-    const lastBracket = clean.search(/[\]}](?!.*[\]}])/);
-    if (lastBracket !== -1) {
-      clean = clean.slice(firstBracket, lastBracket + 1);
-      try {
-        JSON.parse(clean);
-        return clean;
-      } catch {
-        // 继续尝试
-      }
-    }
-  }
-
-  // 尝试提取 recommendations 数组
-  const recMatch = clean.match(/"recommendations"\s*:\s*(\[[\s\S]*?\])(\s*[,}]|$)/);
-  if (recMatch) {
-    try {
-      JSON.parse(recMatch[1]);
-      return recMatch[1];
-    } catch {
-      // 继续尝试
-    }
-  }
-
-  return "";
-}
-
 function parseJSON(text: string): unknown[] {
-  const jsonStr = extractJSON(text);
-  if (!jsonStr) return [];
-
   try {
-    const parsed = JSON.parse(jsonStr);
+    const clean = text.replace(/```json\s*|\s*```/g, "").trim();
+    const parsed = JSON.parse(clean);
     if (Array.isArray(parsed)) return parsed;
     if (parsed && typeof parsed === "object" && parsed !== null) {
+      // AI 可能返回了单个对象而不是数组，将其包装为数组
       const keys = Object.keys(parsed as Record<string, unknown>);
       if (keys.includes("title") || keys.includes("type")) {
         return [parsed];
