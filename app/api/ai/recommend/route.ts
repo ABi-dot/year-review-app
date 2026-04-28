@@ -206,11 +206,11 @@ export async function POST(request: NextRequest) {
           },
           { role: "user", content: prompt + "\n\n【重要】直接输出 JSON 数组，不要有任何其他文字。" },
         ],
-        { temperature: 0.8, maxTokens: 4096, jsonMode: true },
+        { temperature: 0.8, maxTokens: 32768, jsonMode: true },
         config
       );
 
-      console.log("[Recommend] AI raw content:", content.slice(0, 800));
+      console.log("[Recommend] AI full content:\n", content);
       const parsed = parseJSON(content);
       console.log("[Recommend] parsed count:", parsed.length);
 
