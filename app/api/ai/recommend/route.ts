@@ -6,6 +6,36 @@ import { fetchAllCharts } from "@/lib/douban-chart";
 import { searchDouban } from "@/lib/douban-search";
 import type { DoubanSearchResult } from "@/lib/douban-search";
 
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type") ?? "hot";
+  const category = searchParams.get("category") ?? "ALL";
+
+  if (!["hot", "personal"].includes(type)) {
+    return NextResponse.json({ error: "type 必须是 hot 或 personal" }, { status: 400 });
+  }
+
+  try {
+    const cached = await prisma.recommendation.findUnique({
+      where: { type_category: { type, category } },
+    });
+
+    if (!cached) {
+      return NextResponse.json({ error: "暂无缓存" }, { status: 404 });
+    }
+
+    const items = JSON.parse(cached.items) as Record<string, unknown>[];
+    return NextResponse.json({
+      recommendations: items,
+      source: cached.source,
+      cachedAt: cached.updatedAt.toISOString(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "读取缓存失败";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   let body: {
     type?: "hot" | "personal";
@@ -19,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const type = body.type ?? "hot";
-  const category = body.category;
+  const category = body.category ?? "ALL";
   const config = body.config;
 
   if (!["hot", "personal"].includes(type)) {
@@ -27,6 +57,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    let recommendations: Record<string, unknown>[] = [];
+    let source = "";
+
     if (type === "hot") {
       const charts = await fetchAllCharts();
       let hotItems = [
@@ -80,7 +113,7 @@ export async function POST(request: NextRequest) {
         GAME: "游戏",
       };
 
-      const recommendations = hotItems.map((item) => ({
+      recommendations = hotItems.map((item) => ({
         title: item.title,
         type: item.type,
         creator: item.creator,
@@ -90,8 +123,7 @@ export async function POST(request: NextRequest) {
           ? `${item.creator} · 豆瓣${item.rating}分`
           : `豆瓣${item.rating}分热门${typeLabels[item.type] || item.type}`,
       }));
-
-      return NextResponse.json({ recommendations, source: "douban-chart" });
+      source = "douban-chart";
     } else {
       if (!isAIConfigured(config)) {
         return NextResponse.json(
@@ -139,31 +171,32 @@ export async function POST(request: NextRequest) {
           },
           { role: "user", content: prompt },
         ],
-        { temperature: 0.8, maxTokens: 32768, jsonMode: true },
+        { temperature: 0.8, maxTokens: 4096, jsonMode: true },
         config
       );
 
       console.log("[Recommend] AI raw content:", content.slice(0, 500));
-      const recommendations = parseJSON(content);
-      console.log("[Recommend] parsed count:", recommendations.length);
+      const parsed = parseJSON(content);
+      console.log("[Recommend] parsed count:", parsed.length);
 
-      if (recommendations.length === 0) {
+      if (parsed.length === 0) {
         return NextResponse.json(
           { error: "AI 返回格式不正确，请重试" },
           { status: 500 }
         );
       }
 
+      const parsedRecs = parsed as Record<string, unknown>[];
       const enriched = await Promise.allSettled(
-        (recommendations as Record<string, unknown>[]).map(async (rec) => {
+        parsedRecs.map(async (rec) => {
           const title = typeof rec.title === "string" ? rec.title : "";
           const rawType = typeof rec.type === "string" ? rec.type : "";
-          const type = ["MOVIE", "TV", "BOOK"].includes(rawType)
+          const itemType = ["MOVIE", "TV", "BOOK"].includes(rawType)
             ? (rawType as "MOVIE" | "TV" | "BOOK")
             : undefined;
-          if (!title || !type) return rec;
+          if (!title || !itemType) return rec;
           try {
-            const results = await searchDouban(title, type);
+            const results = await searchDouban(title, itemType);
             if (results.length > 0 && results[0].cover) {
               return { ...rec, cover: results[0].cover };
             }
@@ -174,12 +207,20 @@ export async function POST(request: NextRequest) {
         })
       );
 
-      const finalRecommendations = enriched.map((r) =>
+      recommendations = enriched.map((r) =>
         r.status === "fulfilled" ? r.value : (r.reason as Record<string, unknown>)
       );
-
-      return NextResponse.json({ recommendations: finalRecommendations, source: "ai-personal" });
+      source = "ai-personal";
     }
+
+    // 写入数据库缓存
+    await prisma.recommendation.upsert({
+      where: { type_category: { type, category } },
+      update: { items: JSON.stringify(recommendations), source },
+      create: { type, category, items: JSON.stringify(recommendations), source },
+    });
+
+    return NextResponse.json({ recommendations, source });
   } catch (err) {
     const message = err instanceof Error ? err.message : "推荐生成失败";
     return NextResponse.json({ error: message }, { status: 500 });

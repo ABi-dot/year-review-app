@@ -32,35 +32,6 @@ const CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: "GAME", label: "游戏" },
 ];
 
-const CACHE_KEY = "year-review-recommendations";
-
-interface CacheData {
-  results: Record<string, RecommendItem[]>;
-  loadedKeys: string[];
-}
-
-function saveCache(results: Record<string, RecommendItem[]>, loadedKeys: Set<string>) {
-  const data: CacheData = {
-    results,
-    loadedKeys: Array.from(loadedKeys),
-  };
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // 忽略存储失败
-  }
-}
-
-function loadCache(): CacheData | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as CacheData;
-  } catch {
-    return null;
-  }
-}
-
 export default function RecommendPage() {
   const [tab, setTab] = useState<"hot" | "personal">("hot");
   const [category, setCategory] = useState<string>("ALL");
@@ -74,21 +45,50 @@ export default function RecommendPage() {
     setHasConfig(!!getStoredConfig());
   }, []);
 
-  // 页面加载时恢复缓存
+  // 页面加载时从数据库读取缓存
   useEffect(() => {
-    const cached = loadCache();
-    if (cached) {
-      setResults(cached.results);
-      setLoadedKeys(new Set(cached.loadedKeys));
-    }
-  }, []);
+    const loadFromDB = async () => {
+      const keysToLoad = [
+        { type: "hot", category: "ALL" },
+        { type: "hot", category: "MOVIE" },
+        { type: "hot", category: "TV" },
+        { type: "hot", category: "BOOK" },
+        { type: "hot", category: "GAME" },
+        { type: "personal", category: "ALL" },
+        { type: "personal", category: "MOVIE" },
+        { type: "personal", category: "TV" },
+        { type: "personal", category: "BOOK" },
+        { type: "personal", category: "GAME" },
+      ];
 
-  // 状态变化时持久化缓存
-  useEffect(() => {
-    if (loadedKeys.size > 0) {
-      saveCache(results, loadedKeys);
-    }
-  }, [results, loadedKeys]);
+      const newResults: Record<string, RecommendItem[]> = {};
+      const newLoaded = new Set<string>();
+
+      await Promise.all(
+        keysToLoad.map(async ({ type, category: cat }) => {
+          try {
+            const res = await fetch(`/api/ai/recommend?type=${type}&category=${cat}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.recommendations?.length > 0) {
+              const key = `${type}-${cat}`;
+              newResults[key] = data.recommendations as RecommendItem[];
+              newLoaded.add(key);
+            }
+          } catch {
+            // 忽略单个缓存读取失败
+          }
+        })
+      );
+
+      if (newLoaded.size > 0) {
+        setResults(newResults);
+        setLoadedKeys(newLoaded);
+      }
+    };
+
+    loadFromDB();
+  }, []);
 
   const getKey = (t: string, c: string) => `${t}-${c}`;
 

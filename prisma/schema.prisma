@@ -88,3 +88,15 @@ model YearSummary {
   @@unique([year, style])
 }
 
+model Recommendation {
+  id        String   @id @default(cuid())
+  type      String   // "hot" | "personal"
+  category  String   // "ALL" | "MOVIE" | "TV" | "BOOK" | "GAME"
+  items     String   // JSON 字符串
+  source    String   // "douban-chart" | "ai-personal"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, category])
+}
+
