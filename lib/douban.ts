@@ -61,7 +61,8 @@ function upgradeCoverUrl(url: string): string {
   return url
     .replace(/\/view\/subject\/(s|m)\//, "/view/subject/l/")
     .replace(/\/view\/photo\/(s|m)_ratio_poster\//, "/view/photo/l_ratio_poster/")
-    .replace(/\/spic\//, "/lpic/");
+    .replace(/\/spic\//, "/lpic/")
+    .replace(/\/mpic\//, "/lpic/");
 }
 
 // ==================== RSS 模式 ====================
