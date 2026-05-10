@@ -55,10 +55,13 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// 豆瓣缩略图 URL 升级为高清图：/s/ /m/ → /l/
+// 豆瓣缩略图 URL 升级为高清图
 function upgradeCoverUrl(url: string): string {
   if (!url) return url;
-  return url.replace(/\/view\/subject\/(s|m)\//, "/view/subject/l/");
+  return url
+    .replace(/\/view\/subject\/(s|m)\//, "/view/subject/l/")
+    .replace(/\/view\/photo\/(s|m)_ratio_poster\//, "/view/photo/l_ratio_poster/")
+    .replace(/\/spic\//, "/lpic/");
 }
 
 // ==================== RSS 模式 ====================
